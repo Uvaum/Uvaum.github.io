@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07060b" />
+    <script>
+      // Apply the saved theme before first paint to avoid a flash; dark is the default.
+      try {
+        if (localStorage.getItem('theme') === 'light') {
+          document.documentElement.dataset.theme = 'light'
+          document.querySelector('link[rel="icon"]').href = '/favicon-light.svg'
+        } else {
+          document.documentElement.dataset.theme = 'dark'
+        }
+      } catch (e) {
+        document.documentElement.dataset.theme = 'dark'
+      }
+    </script>
+    <meta name="description" content="Rhuan Oliveira, desenvolvedor Full Stack: Python, Django, React e AWS." />
+    <meta property="og:title" content="Rhuan Oliveira | Full Stack Developer" />
+    <meta property="og:description" content="APIs em Python e Django, interfaces em React e infraestrutura na AWS." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://uvaum.github.io/" />
+    <meta property="og:image" content="https://uvaum.github.io/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://uvaum.github.io/og.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <title>Rhuan Oliveira | Full Stack Developer</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
