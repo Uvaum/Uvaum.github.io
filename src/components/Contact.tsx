@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { profile } from '../data/content'
 import { useI18n } from '../i18n'
 import { sfx } from '../sfx'
+import { ContinueBuddy } from './ContinueBuddy'
 import { ResetLayout } from './ResetLayout'
 import { Reveal } from './Reveal'
 
@@ -62,7 +63,10 @@ export function Contact() {
     <section id="contact" className="section contact">
       <Reveal className="contact-card px-box">
         <div className="continue" ref={ref} aria-hidden>
-          {t.contact.kicker} <span className="count">{n}</span>
+          <ContinueBuddy n={n} />
+          <span>
+            {t.contact.kicker} <span className="count">{n}</span>
+          </span>
         </div>
         <h2>
           {t.contact.title}

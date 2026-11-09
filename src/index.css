@@ -50,6 +50,13 @@
   --px-l: #15803d;
   --px-y: #ffd23f;
   --px-m: #e4c2ff;
+  --px-r: #4ade80;
+  --px-w: #6fe6ff;
+  --px-g: #f3ecff;
+  --px-b: #5a3418;
+  --px-p: #ff7eb6;
+  --px-e: #ffffff;
+  --px-t: #c08a4a;
 
   --pixel: 'Press Start 2P', ui-monospace, monospace;
   --font: 'VT323', ui-monospace, monospace;
@@ -99,6 +106,13 @@
   --px-l: #0f380f;
   --px-y: #0f380f;
   --px-m: #0f380f;
+  --px-r: #7b2fff;
+  --px-w: #306230;
+  --px-g: #306230;
+  --px-b: #0f380f;
+  --px-p: #4f7a1f;
+  --px-e: #f0ffc8;
+  --px-t: #8a5a2b;
   color-scheme: light;
 }
 
@@ -112,6 +126,13 @@
 .px-y { fill: var(--px-y); }
 .px-m { fill: var(--px-m); }
 .px-k { fill: currentColor; }
+.px-r { fill: var(--px-r); }
+.px-w { fill: var(--px-w); }
+.px-g { fill: var(--px-g); }
+.px-b { fill: var(--px-b); }
+.px-p { fill: var(--px-p); }
+.px-e { fill: var(--px-e); }
+.px-t { fill: var(--px-t); }
 
 /* ---------- Base ---------- */
 * {
@@ -1267,6 +1288,41 @@ main {
   font-size: 0.7rem;
   color: var(--coin);
 }
+.continue {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.9rem;
+}
+/* "Continue?" buddy: two frames swapped in place, 4 times a second. */
+.buddy {
+  position: relative;
+  display: inline-grid;
+}
+.buddy > svg {
+  grid-area: 1 / 1;
+}
+.buddy .fa {
+  animation: blink 0.5s steps(1) infinite;
+}
+.buddy .fb {
+  animation: blink 0.5s steps(1) -0.25s infinite;
+}
+.buddy.nervous {
+  animation: shake 0.16s steps(2) infinite;
+}
+.buddy.ko > svg {
+  animation: none;
+  transform: rotate(90deg) translateX(30%);
+}
+.buddy.ko .fb {
+  visibility: hidden;
+}
+@keyframes shake {
+  50% {
+    translate: 2px 0;
+  }
+}
 .count {
   display: inline-block;
   min-width: 1.4em;
@@ -1929,7 +1985,8 @@ main {
   z-index: 100;
   display: grid;
   place-items: center;
-  padding: clamp(0px, 3vw, 32px);
+  --pad: clamp(0px, 3vw, 32px);
+  padding: var(--pad);
   background: rgba(5, 2, 11, 0.85);
 }
 :root[data-theme='light'] .preview-overlay {
@@ -1938,7 +1995,10 @@ main {
 .preview-panel {
   animation: rise-big 0.3s steps(3);
   width: min(1280px, 100%);
-  height: min(900px, 100%);
+  height: min(900px, calc(100vh - 2 * var(--pad)));
+  height: min(900px, calc(100dvh - 2 * var(--pad)));
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 1rem;
