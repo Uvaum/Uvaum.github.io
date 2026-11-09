@@ -1,20 +1,21 @@
-import { motion } from 'framer-motion'
-import type { ReactNode } from 'react'
+import { useRef, type CSSProperties, type ReactNode } from 'react'
+import { useInView } from '../hooks'
 import { DragHandle } from './Sortable'
 
 type Props = { children: ReactNode; delay?: number; y?: number; className?: string }
 
-export function Reveal({ children, delay = 0, y = 32, className }: Props) {
+/** Fades and steps content up into place (in CSS, see .rv) the first time it scrolls into view. */
+export function Reveal({ children, delay = 0, y = 32, className = '' }: Props) {
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref)
   return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
+    <div
+      ref={ref}
+      className={`rv ${inView ? 'in' : ''} ${className}`}
+      style={{ '--d': `${delay}s`, '--ry': `${y}px` } as CSSProperties}
     >
       {children}
-    </motion.div>
+    </div>
   )
 }
 

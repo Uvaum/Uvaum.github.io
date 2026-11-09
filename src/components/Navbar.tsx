@@ -1,17 +1,24 @@
-import { motion, useScroll, useSpring } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useScrollProgress } from '../hooks'
 import { useI18n } from '../i18n'
 import { useLayout } from '../layout'
+import { setRecruiter, useRecruiter } from '../mode'
+import { PixelArt, grapeSprite } from './PixelArt'
+import { SoundToggle } from './SoundToggle'
 import { ThemeToggle } from './ThemeToggle'
 
 export function Navbar() {
   const { t, lang, toggle } = useI18n()
-  const { scrollYProgress } = useScroll()
-  const progress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 })
+  const fillRef = useRef<HTMLDivElement>(null)
+  useScrollProgress(
+    () => window.scrollY / (document.documentElement.scrollHeight - window.innerHeight),
+    (p) => fillRef.current?.style.setProperty('transform', `scaleX(${p})`),
+  )
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState('')
   const { sections } = useLayout()
+  const recruiter = useRecruiter()
   const ids = [...sections, 'contact' as const]
 
   useEffect(() => {
@@ -34,37 +41,45 @@ export function Navbar() {
   }, [])
 
   return (
-    <motion.header
-      className={`nav ${scrolled ? 'nav-scrolled' : ''}`}
-      initial={{ y: -80 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6, ease: 'easeOut' }}
-    >
-      <motion.div className="nav-progress" style={{ scaleX: progress }} />
-      <a href="#top" className="logo" onClick={() => setOpen(false)}>
-        <span className="logo-bracket">&lt;</span>RO<span className="logo-bracket">/&gt;</span>
+    <header className={`nav ${scrolled ? 'nav-scrolled' : ''}`}>
+      <div className="nav-progress">
+        <div className="nav-progress-fill" ref={fillRef} />
+      </div>
+      <a href="#top" className="logo" onClick={() => setOpen(false)} aria-label="Rhuan Oliveira">
+        <PixelArt rows={grapeSprite} size={26} className="logo-grape" />
+        <span>RO</span>
       </a>
 
       <nav className={`nav-links ${open ? 'open' : ''}`}>
         {ids.map((id) => (
           <a key={id} href={`#${id}`} className={active === id ? 'active' : ''} onClick={() => setOpen(false)}>
+            {active === id && <span className="nav-cursor" aria-hidden />}
             {t.nav[id]}
-            {active === id && <motion.span layoutId="nav-dot" className="nav-dot" />}
           </a>
         ))}
       </nav>
 
       <div className="nav-actions">
+        <button
+          className={`mode-btn ${recruiter ? 'on' : ''}`}
+          onClick={() => setRecruiter(!recruiter)}
+          aria-pressed={recruiter}
+          title={recruiter ? t.recruiter.off : t.recruiter.on}
+        >
+          {recruiter ? (lang === 'pt' ? 'JOGO' : 'GAME') : 'CV'}
+        </button>
+        {!recruiter && <SoundToggle />}
         <ThemeToggle />
-        <button className="lang-toggle" onClick={toggle} aria-label="Mudar idioma / Change language">
+        <button className="lang-toggle" onClick={toggle} title="Mudar idioma / Change language">
           <span className={lang === 'pt' ? 'on' : ''}>PT</span>
           <span className={lang === 'en' ? 'on' : ''}>EN</span>
         </button>
         <button className={`burger ${open ? 'open' : ''}`} onClick={() => setOpen((o) => !o)} aria-label="Menu">
           <span />
           <span />
+          <span />
         </button>
       </div>
-    </motion.header>
+    </header>
   )
 }

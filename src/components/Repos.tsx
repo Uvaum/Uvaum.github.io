@@ -4,11 +4,12 @@ import { useI18n } from '../i18n'
 import { applyOrder, useLayout } from '../layout'
 import { Reveal, SectionTitle } from './Reveal'
 import { DragHandle, SortableItem, SortableList } from './Sortable'
-import { TiltCard } from './TiltCard'
+import { PixelThumb } from './PixelThumb'
 
 type Repo = {
   id: number
   name: string
+  full_name: string
   html_url: string
   description: string | null
   language: string | null
@@ -33,6 +34,7 @@ export function Repos() {
   const { t, lang } = useI18n()
   const [repos, setRepos] = useState<Repo[] | null>(null)
   const [error, setError] = useState(false)
+  const [hovered, setHovered] = useState<number | null>(null)
   const { cardOrder, setCardOrder } = useLayout()
   const shown = repos && applyOrder(repos, cardOrder('repos'), (r) => String(r.id))
 
@@ -62,7 +64,7 @@ export function Repos() {
       {!shown && !error && (
         <div className="repos-grid">
           {Array.from({ length: MAX }, (_, i) => (
-            <div key={i} className="card repo-card skeleton" />
+            <div key={i} className="card px-box repo-card skeleton" />
           ))}
         </div>
       )}
@@ -73,7 +75,21 @@ export function Repos() {
             {shown.map((r, i) => (
               <SortableItem key={r.id} id={String(r.id)}>
                 <Reveal delay={(i % 3) * 0.08}>
-                  <TiltCard className="repo-card">
+                  <div
+                    className="card px-box hop repo-card cartridge"
+                    onPointerEnter={() => setHovered(r.id)}
+                    onPointerLeave={() => setHovered(null)}
+                    onFocus={() => setHovered(r.id)}
+                    onBlur={() => setHovered(null)}
+                  >
+                    <div className="cart-top" aria-hidden>
+                      <span />
+                    </div>
+                    <PixelThumb
+                      src={`https://opengraph.githubassets.com/1/${r.full_name}`}
+                      alt={r.name}
+                      hover={hovered === r.id}
+                    />
                     <div className="repo-head">
                       <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden>
                         <path
@@ -93,7 +109,7 @@ export function Repos() {
                     <div className="repo-meta">
                       {r.language && (
                         <span>
-                          <i style={{ background: langColors[r.language] ?? '#a855f7' }} />
+                          <i style={{ background: langColors[r.language] ?? 'var(--accent)' }} />
                           {r.language}
                         </span>
                       )}
@@ -102,7 +118,7 @@ export function Repos() {
                         {t.repos.updated} {fmt(r.pushed_at)}
                       </span>
                     </div>
-                  </TiltCard>
+                  </div>
                 </Reveal>
               </SortableItem>
             ))}

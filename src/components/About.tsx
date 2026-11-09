@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import type { CSSProperties } from 'react'
 import { profile } from '../data/content'
 import { useI18n } from '../i18n'
 import { Reveal, SectionTitle } from './Reveal'
@@ -22,7 +22,7 @@ export function About() {
       <SectionTitle title={t.about.title} />
       <div className="about-grid">
         <Reveal className="profile-card-wrap">
-          <div className="profile-card">
+          <div className="profile-card px-box">
             <div className="profile-head">
               <div>
                 <strong>{profile.name}</strong>
@@ -35,13 +35,7 @@ export function About() {
             </div>
             <ul className="facts">
               {t.about.facts.map((f, i) => (
-                <motion.li
-                  key={f.icon}
-                  initial={{ opacity: 0, x: -16 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.15 + i * 0.1, duration: 0.5 }}
-                >
+                <li key={f.icon} className="slide" style={{ '--d': `${0.15 + i * 0.1}s` } as CSSProperties}>
                   <span className="fact-icon">
                     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
                       <path fill="currentColor" d={icons[f.icon]} />
@@ -51,7 +45,7 @@ export function About() {
                     <small>{f.label}</small>
                     {f.value}
                   </span>
-                </motion.li>
+                </li>
               ))}
             </ul>
           </div>
@@ -66,8 +60,8 @@ export function About() {
           <div className="stats">
             <TenureStat />
             {t.about.stats.map((s, i) => (
-              <Reveal key={s.label} delay={0.3 + i * 0.1} className="stat">
-                <strong className="gradient-text">{s.value}</strong>
+              <Reveal key={s.label} delay={0.3 + i * 0.1} className="stat px-box">
+                <strong className="stat-value">{s.value}</strong>
                 <span>{s.label}</span>
               </Reveal>
             ))}

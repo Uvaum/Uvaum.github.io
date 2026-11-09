@@ -20,6 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { useI18n } from '../i18n'
+import { sfx } from '../sfx'
 
 type HandleCtx = {
   attributes: DraggableAttributes
@@ -48,7 +49,10 @@ export function SortableList<T extends string>({ ids, onReorder, layout = 'grid'
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={(e) => setActive(e.active.id as T)}
+      onDragStart={(e) => {
+        setActive(e.active.id as T)
+        sfx.jump()
+      }}
       onDragCancel={() => setActive(null)}
       onDragEnd={({ active: a, over }) => {
         setActive(null)
@@ -101,11 +105,11 @@ export function DragHandle({ className = '' }: { className?: string }) {
 
 export function GripIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden className="grip-icon">
-      {[6, 12, 18].map((y) => (
+    <svg viewBox="0 0 8 10" width={size} height={size} aria-hidden className="grip-icon" shapeRendering="crispEdges">
+      {[1, 4, 7].map((y) => (
         <g key={y} fill="currentColor">
-          <circle cx="9" cy={y} r="1.7" />
-          <circle cx="15" cy={y} r="1.7" />
+          <rect x="1" y={y} width="2" height="2" />
+          <rect x="5" y={y} width="2" height="2" />
         </g>
       ))}
     </svg>

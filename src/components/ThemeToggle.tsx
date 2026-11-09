@@ -1,19 +1,36 @@
-import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { flushSync } from 'react-dom'
 import { useI18n } from '../i18n'
+import { sfx } from '../sfx'
+import { PixelArt, moon, sun } from './PixelArt'
 
 type Theme = 'dark' | 'light'
 
-const sun =
-  'M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0-5 1 3h-2l1-3Zm0 20-1-3h2l-1 3ZM2 12l3-1v2l-3-1Zm20 0-3 1v-2l3 1ZM4.93 4.93l2.83 1.42-1.41 1.41-1.42-2.83Zm14.14 14.14-2.83-1.42 1.41-1.41 1.42 2.83ZM4.93 19.07l1.42-2.83 1.41 1.41-2.83 1.42ZM19.07 4.93l-1.42 2.83-1.41-1.41 2.83-1.42Z'
-const moon = 'M21 14.5A9 9 0 0 1 9.5 3a9 9 0 1 0 11.5 11.5Z'
-
 // index.html sets data-theme before React loads, so the first paint already has the right theme.
-// Share of the flood's radius that is fully opaque; the rest is the feathered edge (see .theme-flood).
-const SOLID = 0.7
-
 const current = (): Theme => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark')
+
+const CELL = 28 // size of one block of the pixelated circle
+const FRAMES = 14 // the circle grows in discrete frames, like an old console
+const DURATION = 620
+
+/**
+ * A pixelated circle centered on (cx, cy) as a clip-path polygon: for each row of blocks,
+ * the span of blocks whose distance to the center fits inside r, traced as a staircase outline.
+ */
+function stairs(cx: number, cy: number, r: number) {
+  if (r < CELL / 2) return `polygon(${cx}px ${cy}px, ${cx}px ${cy}px, ${cx}px ${cy}px)`
+  const n = Math.floor(r / CELL)
+  const rows: { top: number; bottom: number; x0: number; x1: number }[] = []
+  for (let i = -n; i <= n; i++) {
+    const dy = Math.abs(i) * CELL
+    const half = Math.floor(Math.sqrt(r * r - dy * dy) / CELL)
+    const top = cy + (i - 0.5) * CELL
+    rows.push({ top, bottom: top + CELL, x0: cx - (half + 0.5) * CELL, x1: cx + (half + 0.5) * CELL })
+  }
+  const right = rows.flatMap((p) => [`${p.x1}px ${p.top}px`, `${p.x1}px ${p.bottom}px`])
+  const left = [...rows].reverse().flatMap((p) => [`${p.x0}px ${p.bottom}px`, `${p.x0}px ${p.top}px`])
+  return `polygon(${[...right, ...left].join(', ')})`
+}
 
 export function ThemeToggle() {
   const { lang } = useI18n()
@@ -22,7 +39,7 @@ export function ThemeToggle() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f7f8f5' : '#07060b')
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#d7e3a6' : '#0d0817')
     // Purple grape in the dark theme, green grape in the light one.
     document
       .querySelector('link[rel="icon"]')
@@ -30,63 +47,60 @@ export function ThemeToggle() {
   }, [theme])
 
   const toggle = (e: MouseEvent<HTMLButtonElement>) => {
+    // Ignore clicks while a switch is still animating; the state would be stale.
+    if (busy.current) return
     const next: Theme = theme === 'dark' ? 'light' : 'dark'
     try {
       localStorage.setItem('theme', next)
     } catch {
       /* storage unavailable */
     }
+    if (next === 'light') sfx.powerUp()
+    else sfx.powerDown()
+
+    const root = document.documentElement
+    const apply = () => {
+      flushSync(() => setTheme(next))
+      root.dataset.theme = next
+    }
 
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduce || busy.current) {
-      setTheme(next)
+    if (reduce || !document.startViewTransition) {
+      apply()
       return
     }
     busy.current = true
 
-    // A soft-edged disc of light grows out of the button (or is sucked back into it).
-    // Only transform and opacity are animated, so it stays on the GPU and never repaints the page.
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect()
-    const x = left + width / 2
-    const y = top + height / 2
-    const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) / SOLID
-    const flood = document.createElement('div')
-    flood.className = 'theme-flood'
-    Object.assign(flood.style, { left: `${x - r}px`, top: `${y - r}px`, width: `${2 * r}px`, height: `${2 * r}px` })
-    document.body.appendChild(flood)
+    const cx = left + width / 2
+    const cy = top + height / 2
+    const R = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy)) + CELL * 2
 
-    const apply = () => {
-      flushSync(() => setTheme(next))
-      document.documentElement.dataset.theme = next
-    }
-    // Wait two frames so the theme switch is fully painted under the flood before it moves again.
-    const afterPaint = () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))
-    const finish = () => {
-      flood.remove()
+    // Going to light, the new page grows out of the button; going back to dark,
+    // the light page stays on top and is sucked back into the button.
+    const grow = next === 'light'
+    root.classList.toggle('vt-shrink', !grow)
+
+    const frames = Array.from({ length: FRAMES + 1 }, (_, k) => {
+      const p = k / FRAMES
+      const eased = grow ? 1 - (1 - p) ** 2 : 1 - p * p
+      return { clipPath: stairs(cx, cy, eased * R), easing: 'steps(1, end)' }
+    })
+
+    const vt = document.startViewTransition(apply)
+    vt.ready
+      .then(() => {
+        root.animate(frames, {
+          duration: DURATION,
+          fill: 'both',
+          pseudoElement: grow ? '::view-transition-new(root)' : '::view-transition-old(root)',
+        })
+      })
+      .catch(() => {})
+    vt.finished.finally(() => {
+      root.classList.remove('vt-shrink')
       busy.current = false
-    }
-
-    if (next === 'light') {
-      flood
-        .animate({ transform: ['scale(0)', 'scale(1)'] }, { duration: 650, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' })
-        .finished.then(apply)
-        .then(afterPaint)
-        .then(() => flood.animate({ opacity: [1, 0] }, { duration: 380, easing: 'ease-out', fill: 'forwards' }).finished)
-        .finally(finish)
-    } else {
-      flood
-        .animate({ opacity: [0, 1] }, { duration: 160, easing: 'ease-out', fill: 'forwards' })
-        .finished.then(apply)
-        .then(afterPaint)
-        .then(
-          () =>
-            flood.animate(
-              { transform: ['scale(1)', 'scale(0)'] },
-              { duration: 650, easing: 'cubic-bezier(0.55, 0, 0.75, 0.2)', fill: 'forwards' },
-            ).finished,
-        )
-        .finally(finish)
-    }
+    })
   }
 
   const label =
@@ -99,22 +113,8 @@ export function ThemeToggle() {
         : 'Switch to dark theme'
 
   return (
-    <button className="theme-toggle" onClick={toggle} aria-label={label} title={label}>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.svg
-          key={theme}
-          viewBox="0 0 24 24"
-          width="17"
-          height="17"
-          aria-hidden
-          initial={{ rotate: -90, scale: 0, opacity: 0 }}
-          animate={{ rotate: 0, scale: 1, opacity: 1 }}
-          exit={{ rotate: 90, scale: 0, opacity: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          <path fill="currentColor" d={theme === 'dark' ? moon : sun} />
-        </motion.svg>
-      </AnimatePresence>
+    <button className="icon-btn theme-toggle" data-nosfx onClick={toggle} aria-label={label} title={label}>
+      <PixelArt key={theme} rows={theme === 'dark' ? moon : sun} size={18} className="icon-pop" />
     </button>
   )
 }

@@ -1,7 +1,7 @@
-import { AnimatePresence, motion } from 'framer-motion'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { profile } from '../data/content'
 import { useI18n } from '../i18n'
+import { sfx } from '../sfx'
 import { ResetLayout } from './ResetLayout'
 import { Reveal } from './Reveal'
 
@@ -21,14 +21,37 @@ function Icon({ d }: { d: string }) {
   )
 }
 
+/** Arcade-style "continue?" countdown from 9 to 0 that loops while the section is on screen. */
+function useCountdown() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [n, setN] = useState(9)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let id = 0
+    const io = new IntersectionObserver(([e]) => {
+      clearInterval(id)
+      if (e.isIntersecting) id = window.setInterval(() => setN((v) => (v === 0 ? 9 : v - 1)), 1000)
+    })
+    io.observe(el)
+    return () => {
+      clearInterval(id)
+      io.disconnect()
+    }
+  }, [])
+  return { ref, n }
+}
+
 export function Contact() {
   const { t } = useI18n()
   const [copied, setCopied] = useState(false)
+  const { ref, n } = useCountdown()
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(profile.email)
       setCopied(true)
+      sfx.coin()
       setTimeout(() => setCopied(false), 1800)
     } catch {
       window.location.href = `mailto:${profile.email}`
@@ -37,43 +60,37 @@ export function Contact() {
 
   return (
     <section id="contact" className="section contact">
-      <Reveal className="contact-card">
+      <Reveal className="contact-card px-box">
+        <div className="continue" ref={ref} aria-hidden>
+          {t.contact.kicker} <span className="count">{n}</span>
+        </div>
         <h2>
-          <span className="gradient-text">{t.contact.title}</span>
+          {t.contact.title}
         </h2>
         <p>{t.contact.text}</p>
 
         <div className="contact-links">
-          <motion.a whileHover={{ y: -4 }} href={profile.linkedin} target="_blank" rel="noreferrer" className="social">
+          <a href={profile.linkedin} target="_blank" rel="noreferrer" className="social">
             <Icon d={icons.linkedin} /> LinkedIn
-          </motion.a>
-          <motion.a
-            whileHover={{ y: -4 }}
+          </a>
+          <a
             href={`https://github.com/${profile.github}`}
             target="_blank"
             rel="noreferrer"
             className="social"
           >
             <Icon d={icons.github} /> GitHub
-          </motion.a>
-          <motion.a whileHover={{ y: -4 }} href={`mailto:${profile.email}`} className="social">
+          </a>
+          <a href={`mailto:${profile.email}`} className="social">
             <Icon d={icons.mail} /> E-mail
-          </motion.a>
+          </a>
         </div>
 
-        <button className="email-copy mono" onClick={copy}>
+        <button className="email-copy mono" data-nosfx onClick={copy}>
           {profile.email}
-          <AnimatePresence mode="wait">
-            <motion.span
-              key={copied ? 'ok' : 'copy'}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              className="copy-label"
-            >
-              {copied ? t.contact.copied : t.contact.copy}
-            </motion.span>
-          </AnimatePresence>
+          <span key={copied ? 'ok' : 'copy'} className="copy-label swap-in" aria-live="polite">
+            {copied ? t.contact.copied : t.contact.copy}
+          </span>
         </button>
       </Reveal>
 

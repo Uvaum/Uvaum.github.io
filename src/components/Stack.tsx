@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import type { CSSProperties } from 'react'
 import { stack } from '../data/content'
 import { useI18n } from '../i18n'
 import { applyOrder, useLayout } from '../layout'
@@ -25,17 +25,13 @@ export function Stack() {
                 </div>
                 <div className="chips">
                   {g.items.map((item, i) => (
-                    <motion.span
+                    <span
                       key={item}
-                      className="chip"
-                      initial={{ opacity: 0, scale: 0.6 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: gi * 0.1 + i * 0.05, type: 'spring', stiffness: 260, damping: 18 }}
-                      whileHover={{ y: -3 }}
+                      className="chip pop"
+                      style={{ '--d': `${gi * 0.1 + i * 0.05}s` } as CSSProperties}
                     >
                       {item}
-                    </motion.span>
+                    </span>
                   ))}
                 </div>
               </Reveal>

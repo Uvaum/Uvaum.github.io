@@ -1,4 +1,3 @@
-import { MotionConfig } from 'framer-motion'
 import type { ComponentType } from 'react'
 import { About } from './components/About'
 import { Background } from './components/Background'
@@ -8,11 +7,13 @@ import { DevicePreview, isEmbedded } from './components/DevicePreview'
 import { Experience } from './components/Experience'
 import { Hero } from './components/Hero'
 import { Navbar } from './components/Navbar'
+import { RecruiterSummary } from './components/RecruiterSummary'
 import { Repos } from './components/Repos'
 import { GripIcon, SortableItem, SortableList } from './components/Sortable'
 import { Stack } from './components/Stack'
 import { I18nProvider, useI18n } from './i18n'
 import { LayoutProvider, useLayout, type SectionId } from './layout'
+import { useRecruiter } from './mode'
 
 const sectionComponents: Record<SectionId, ComponentType> = {
   about: About,
@@ -50,20 +51,19 @@ function Sections() {
 }
 
 export default function App() {
+  const recruiter = useRecruiter()
   return (
-    <MotionConfig reducedMotion="user">
-      <I18nProvider>
-        <LayoutProvider>
-          <Background />
-          <Navbar />
-          <main>
-            <Hero />
-            <Sections />
-            <Contact />
-          </main>
-          {!isEmbedded && <DevicePreview />}
-        </LayoutProvider>
-      </I18nProvider>
-    </MotionConfig>
+    <I18nProvider>
+      <LayoutProvider>
+        {!recruiter && <Background />}
+        <Navbar />
+        <main>
+          {recruiter ? <RecruiterSummary /> : <Hero />}
+          <Sections />
+          <Contact />
+        </main>
+        {!isEmbedded && !recruiter && <DevicePreview />}
+      </LayoutProvider>
+    </I18nProvider>
   )
 }
